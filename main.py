@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from midi_steganography import read_message, hide_message
 
 def main():
@@ -8,9 +9,8 @@ def main():
 
     # 'hide' command setup
     hide_parser = subparsers.add_parser("hide", help="Hide a message in a MIDI file")
-
     hide_parser.add_argument("-f", "--file", required=True, help="The source MIDI file")
-    hide_parser.add_argument("-m", "--message", required=True, help="The secret message to hide")
+    hide_parser.add_argument("-m", "--message", required=False, help="The secret message to hide")
 
     # 'read' command setup
     read_parser = subparsers.add_parser("read", help="Read a message from a MIDI file")
@@ -21,8 +21,19 @@ def main():
     if args.command == "hide":
         if not os.path.exists(args.file):
             print(f"Error: The file '{args.file}' was not found.")
-            return        
-        hide_message(args.message, args.file)
+            return
+        
+        message = args.message
+
+        # Capture from pipe if -m is missing
+        if not message and not sys.stdin.isatty():
+            message = sys.stdin.read().strip()
+
+        if not message:
+            print("Error: Message is required via -m or pipe (|)")
+            return
+
+        hide_message(message, args.file)
 
     elif args.command == "read":
         if not os.path.exists(args.file):
